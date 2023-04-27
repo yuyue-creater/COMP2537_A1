@@ -154,7 +154,7 @@ app.post('/loggingin', async (req, res) => {
         res.redirect("/invalid");
         return;
     }
-    if (await bcrypt.compare(password, result.password)) {
+    if (bcrypt.compare(password, result.password)) {
         console.log("correct password");
         req.session.GLOBAL_AUTHENTICATED = true;
         req.session.username = username;
