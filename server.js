@@ -19,4 +19,3 @@ async function main() {
 
 
 // mongodb+srv://michaelyuyue2012:bw5kZzYkHBkrrxFf@cluster0.wvnpat0.mongodb.net/?retryWrites=true&w=majority
-// bw5kZzYkHBkrrxFf
