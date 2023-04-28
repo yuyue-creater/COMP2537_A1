@@ -11,22 +11,11 @@ var MongoDBStore = require('connect-mongodb-session')(session);
 const dotenv = require('dotenv')
 dotenv.config();
 
-var dbStore = new MongoDBStore({
-    uri: 'mongodb://localhost:27017/connect_mongodb_session_test',
-    // uri: `mongodb+srv://${process.env.ATLAS_DB_USER}:${process.env.ATLAS_DB_PASSWORD}@cluster0.lbm8g.mongodb.net/comp2537w1?retryWrites=true&w=majority`,
-    collection: 'mySessions'
-
-})
-
-
-const expireTime = 3600;
-//24 * 60 * 60 * 1000; //expires after 1 hour  (hours * minutes * seconds * millis)
-
+const expireTime = 60 * 60 * 1000; //expires after 1 hour  (hours * minutes * seconds * millis)
 
 // replace the in-memory array session store with a database session store
 app.use(session({
     secret: 'the secret is sky color is blue',
-    store: dbStore,
     resave: false,
     saveUninitialized: false,
 }))
@@ -77,21 +66,28 @@ app.get('/signup', (req, res) => {
 app.post('/submitUser', async (req, res) => {
     var username = req.body.username;
     var password = req.body.password;
+    var email = req.body.email;
 
-    if (username == "" || password == "") {
+    if (username == "" || password == "" || email == "") {
         res.redirect("/signupSubmit")
         return
     }
 
-    const schema = Joi.object(
-        {
-            username: Joi.string().alphanum().max(20).required(),
-            password: Joi.string().max(20).required()
-        });
+    const username_test = Joi.string().min(3).max(30).required();
+    const password_test = Joi.string().max(20).required()
 
-    const validationResult = schema.validate({ username, password });
-    if (validationResult.error) {
-        console.log(validationResult.error);
+    const username_result = username_test.validate(username);
+    const password_result = password_test.validate(password)
+
+    // const schema = Joi.object(
+    //     {
+    //         username: Joi.string().alphanum().max(20).required(),
+    //         password: Joi.string().max(20).required()
+    //     });
+
+    // const validationResult = schema.validate({ username: username, password: password });
+    if (username_result.error || password_result.error) {
+        console.log('Please fix your username/password')
         res.redirect("/signup");
         return;
     }
@@ -100,7 +96,8 @@ app.post('/submitUser', async (req, res) => {
 
     await usersModel.insertMany([{ username: username, password: userPassword }]);
     req.session.GLOBAL_AUTHENTICATED = true;
-    // req.session.username = username;
+    req.session.username = username;
+    req.session.password = userPassword;
     req.session.cookie.maxAge = expireTime;
 
     console.log("Inserted user");
@@ -109,17 +106,15 @@ app.post('/submitUser', async (req, res) => {
 });
 
 app.get('/signupSubmit', (req, res) => {
+    
     res.send(`
         Name, email, and password are all required
         <form action="/signup" method="get">
         <input type="submit" value="Try again"/>
-        </form>
-    `)
+        </form>`)
 })
 
 
-
-// loggedina
 app.get('/login', (req, res) => {
     res.send(`
         <form action="/loggingin" method="post">
@@ -147,15 +142,12 @@ app.post('/loggingin', async (req, res) => {
     }
 
     const result = await usersModel.findOne({ username: username })
-
-    console.log(result);
     if (!result) {
         console.log("user not found");
         res.redirect("/invalid");
         return;
     }
-    if (bcrypt.compare(password, result.password)) {
-        console.log("correct password");
+    if (await bcrypt.compare(password, result.password)) {
         req.session.GLOBAL_AUTHENTICATED = true;
         req.session.username = username;
         req.session.cookie.maxAge = expireTime;
@@ -163,7 +155,7 @@ app.post('/loggingin', async (req, res) => {
         return;
     }
     else {
-
+        console.log('wrong password')
         res.redirect("/invalid");
         return;
     }
@@ -177,28 +169,6 @@ app.get('/invalid', (req, res) => {
         </form>
     `)
 })
-// app.post('/loggedina', async (req, res) => {
-//     // set a global variable to true if the user is authenticated
-//     try {
-//         const result = await usersModel.findOne({
-//             username: req.body.username
-//         })
-
-//         if (bcrypt.compareSync(req.body.password, result?.password)) {
-//             req.session.GLOBAL_AUTHENTICATED = true;
-//             req.session.loggedUsername = req.body.username;
-//             req.session.loggedPassword = req.body.password;
-//             res.redirect('/Members');
-//         } else {
-//             res.send("Wrong password")
-//         }
-//     } catch (error) {
-//         console.log(error);
-//     }
-// });
-
-
-
 
 app.use(express.static('public'))
 
