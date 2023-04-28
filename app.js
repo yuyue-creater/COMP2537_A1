@@ -8,6 +8,7 @@ const Joi = require("joi");
 const dotenv = require('dotenv')
 dotenv.config();
 
+app.use(express.urlencoded({ extended: false }))
 
 var MongoDBStore = require('connect-mongodb-session')(session);
 
@@ -28,7 +29,7 @@ app.use(session({
     saveUninitialized: false,
 }))
 
-app.use(express.urlencoded({ extended: false }))
+
 
 app.get('/', (req, res) => {
     html = `
