@@ -191,8 +191,13 @@ app.get('/Members', (req, res) => {
       <input type="submit" value="Sign Out"/>
       </form>
       `
+    if (req.session.GLOBAL_AUTHENTICATED) {
+        res.send(HTMLResponse);
+    } else {
+        res.redirect('/');
+        return
+    }
     
-    res.send(HTMLResponse);
     
 });
 
@@ -235,7 +240,5 @@ app.use(authenticatedOnly);
 // app.get('/protectedRouteForAdminsOnly', (req, res) => {
 //     res.send('<h1> protectedRouteForAdminsOnly </h1>');
 // });
-
-
 
 module.exports = app;
