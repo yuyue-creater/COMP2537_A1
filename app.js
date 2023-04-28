@@ -20,6 +20,8 @@ var dbStore = new MongoDBStore({
 
 const expireTime = 60 * 60 * 1000; //expires after 1 hour  (hours * minutes * seconds * millis)
 
+app.use(express.urlencoded({ extended: false }))
+
 // replace the in-memory array session store with a database session store
 app.use(session({
     secret: 'the secret is sky color is blue',
@@ -28,7 +30,6 @@ app.use(session({
     saveUninitialized: false,
 }))
 
-app.use(express.urlencoded({ extended: false }))
 
 app.get('/', (req, res) => {
     html = `
@@ -190,7 +191,7 @@ app.get('/Members', (req, res) => {
       <input type="submit" value="Sign Out"/>
       </form>
       `
-    console.log(req.session.cookie.maxAge)
+    
     res.send(HTMLResponse);
     
 });
