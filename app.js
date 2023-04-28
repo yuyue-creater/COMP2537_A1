@@ -5,17 +5,25 @@ const usersModel = require('./models/w1users');
 const bcrypt = require('bcrypt');
 
 const Joi = require("joi");
+const dotenv = require('dotenv')
+dotenv.config();
+
 
 var MongoDBStore = require('connect-mongodb-session')(session);
 
-const dotenv = require('dotenv')
-dotenv.config();
+var dbStore = new MongoDBStore({
+    // uri: 'mongodb://localhost:27017/connect_mongodb_session_test',
+    uri: `mongodb+srv://${process.env.ATLAS_DB_USER}:${process.env.ATLAS_DB_PASSWORD}@cluster0.wvnpat0.mongodb.net/comp2537w1?retryWrites=true&w=majority`,
+    collection: 'Sessions'
+  });
+  
 
 const expireTime = 60 * 60 * 1000; //expires after 1 hour  (hours * minutes * seconds * millis)
 
 // replace the in-memory array session store with a database session store
 app.use(session({
     secret: 'the secret is sky color is blue',
+    store: dbStore,
     resave: false,
     saveUninitialized: false,
 }))
@@ -101,7 +109,7 @@ app.post('/submitUser', async (req, res) => {
     req.session.cookie.maxAge = expireTime;
 
     console.log("Inserted user");
-
+    console.log(req.session.cookie.maxAge)
     res.redirect('/members');
 });
 
@@ -182,7 +190,9 @@ app.get('/Members', (req, res) => {
       <input type="submit" value="Sign Out"/>
       </form>
       `
+    console.log(req.session.cookie.maxAge)
     res.send(HTMLResponse);
+    
 });
 
 app.get('/logout', (req, res) => {
