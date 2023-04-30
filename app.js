@@ -88,13 +88,6 @@ app.post('/submitUser', async (req, res) => {
     const username_result = username_test.validate(username);
     const password_result = password_test.validate(password)
 
-    // const schema = Joi.object(
-    //     {
-    //         username: Joi.string().alphanum().max(20).required(),
-    //         password: Joi.string().max(20).required()
-    //     });
-
-    // const validationResult = schema.validate({ username: username, password: password });
     if (username_result.error || password_result.error) {
         console.log('Please fix your username/password')
         res.redirect("/signup");
