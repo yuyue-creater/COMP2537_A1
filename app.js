@@ -220,25 +220,5 @@ const authenticatedOnly = (req, res, next) => {
 
 app.use(authenticatedOnly);
 
-// const protectedRouteForAdminsOnlyMiddlewareFunction = async (req, res, next) => {
-//     try {
-//         const result = await usersModel.findOne(
-//             { 
-//                 username: req.session.loggedUsername,
-//                 password: req.session.loggedPassword
-//              }
-//         )
-//         if (result?.type != 'administrator') {
-//             return res.send('<h1> You are not an admin </h1>')
-//         }
-//         next(); // allow the next route to run
-//     } catch (error) {
-//         console.log(error);
-//     }
-// };
-// app.use(protectedRouteForAdminsOnlyMiddlewareFunction);
-// app.get('/protectedRouteForAdminsOnly', (req, res) => {
-//     res.send('<h1> protectedRouteForAdminsOnly </h1>');
-// });
 
 module.exports = app;
