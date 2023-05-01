@@ -34,7 +34,6 @@ app.use(session({
     store: dbStore,
     resave: false,
     saveUninitialized: false,
-    cooke: { maxAge: expireTime}
 }))
 
 app.get('/', (req, res) => {
