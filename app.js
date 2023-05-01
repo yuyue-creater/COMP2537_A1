@@ -12,13 +12,14 @@ var MongoDBStore = require('connect-mongodb-session')(session);
 /* secret information section */
 const mongodb_session_secret = process.env.MONGODB_SESSION_SECRET;
 const node_session_secret = process.env.NODE_SESSION_SECRET;
+const collection_database = process.env.COLLECTION_DATABASE;
 /* END secret section */
 
 
 var dbStore = new MongoDBStore({
     // uri: 'mongodb://localhost:27017/connect_mongodb_session_test',
-    uri: `mongodb+srv://${process.env.ATLAS_DB_USER}:${process.env.ATLAS_DB_PASSWORD}@${process.env.ATLAS_DB_HOST}/comp2537w1?retryWrites=true&w=majority`,
-    collection: 'Sessions',
+    uri: `mongodb+srv://${process.env.ATLAS_DB_USER}:${process.env.ATLAS_DB_PASSWORD}@${process.env.ATLAS_DB_HOST}/${process.env.MONGODB_DATABASE}?retryWrites=true&w=majority`,
+    collection: collection_database,
     crypto: {
         secret: mongodb_session_secret
     }
@@ -124,8 +125,6 @@ app.post('/submitUser', async (req, res) => {
     res.redirect('/members');
 });
 
-
-
 app.get('/login', (req, res) => {
     res.send(`
         <form action="/loggingin" method="post">
@@ -210,15 +209,5 @@ app.get('/logout', (req, res) => {
 app.get('*', (req, res) => {
     res.status(404).send('<h1> 404 Page not found</h1>');
 });
-
-// authenticated users only
-const authenticatedOnly = (req, res, next) => {
-    if (!req.session.GLOBAL_AUTHENTICATED) {
-        return res.status(401).json({ error: 'not authenticated' });
-    }
-    next(); // allow the next route to run
-};
-
-app.use(authenticatedOnly);
 
 module.exports = app;
