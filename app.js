@@ -120,6 +120,7 @@ app.post('/submitUser', async (req, res) => {
     req.session.GLOBAL_AUTHENTICATED = true;
     req.session.username = username;
     req.session.password = userPassword;
+    req.session.cookie.maxAge = expireTime;
     console.log("Inserted user");
     res.redirect('/members');
 });
@@ -166,6 +167,7 @@ app.post('/loggingin', async (req, res) => {
     if (await bcrypt.compare(password, result.password)) {
         req.session.GLOBAL_AUTHENTICATED = true;
         req.session.username = username;
+        req.session.cookie.maxAge = expireTime;
         res.redirect('/Members');
         return;
     }
