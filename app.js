@@ -112,7 +112,6 @@ app.post('/submitUser', async (req, res) => {
         res.send(`
         <form action="/signup" method="get">
             Please have at least 3 characters in your username and at least 5 characters in your password
-            Make sure there is at least one letter and at least one number in both the username and password
             <br>
             <input type="submit" value="Try Again"/>
         </form>
