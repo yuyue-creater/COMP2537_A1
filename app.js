@@ -25,8 +25,7 @@ var dbStore = new MongoDBStore({
     }
 });
 
-
-const expireTime = 1 * 60 * 60 * 1000; //expires after 1 hour  (hours * minutes * seconds * millis)
+const expireTime = 1 * 60 * 60 * 1000; //expires after 1 hour (hours * minutes * seconds * millis)
 
 app.use(express.urlencoded({ extended: false }))
 
@@ -86,8 +85,7 @@ app.post('/submitUser', async (req, res) => {
     if (username == "" || password == "" || email == "") {
         var message = ``
         if (username == "") {
-            message += `<p>Name is missing</p><br>`
-            
+            message += `<p>Name is missing</p><br>`  
         }
         if (email == "") {
             message += `<p>Email is missing</p><br>`
@@ -111,7 +109,13 @@ app.post('/submitUser', async (req, res) => {
 
     if (username_result.error || password_result.error) {
         console.log('Please fix your username/password')
-        res.redirect("/signup");
+        res.send(`
+        <form action="/signup" method="get">
+            Make sure there is at least one letter and at least one number in both the username and password
+            <br>
+            <input type="submit" value="Try Again"/>
+        </form>
+    `)
         return;
     }
 
@@ -165,7 +169,6 @@ app.post('/loggingin', async (req, res) => {
     if (await bcrypt.compare(password, result.password)) {
         req.session.GLOBAL_AUTHENTICATED = true;
         req.session.username = username;
-        req.session.cookie.maxAge = expireTime;
         res.redirect('/Members');
         return;
     }
@@ -175,14 +178,12 @@ app.post('/loggingin', async (req, res) => {
         Invalid username/password combination
         <form action="/login" method="get">
         <input type="submit" value="Try again"/>
-        </form>
-    `)
+        </form>`)
         return;
     }
 });
 
 app.use(express.static('public'))
-
 app.get('/Members', (req, res) => {
     const randomImageNumber = Math.floor(Math.random() * 3) + 1;
     const imageName = `${randomImageNumber}.png`;
