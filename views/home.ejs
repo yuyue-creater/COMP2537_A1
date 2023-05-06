@@ -1,0 +1,25 @@
+<%- include("templates/header") %>
+    <% if (authenticated) { %>
+        <div class="container">
+        <h1>Hello, <%= user %>!</h1>
+        <br>
+        <form action="/Members" method="get">
+        <input type="submit" value="Go to Members Area"/>
+        </form>
+        <form action="/logout" method="get">
+        <input type="submit" value="Logout"/>
+        </form>
+    </div>
+    <% } else { %>
+        <div class="container">
+            <form action="/signup" method="get">
+                <input type="submit" value="Sign up"/>
+                </form>
+                <form action="/login" method="get">
+                <input type="submit" value="Log in"/>
+                </form>
+        </div>
+    <% } %>
+<%- include("templates/footer") %>
+
+

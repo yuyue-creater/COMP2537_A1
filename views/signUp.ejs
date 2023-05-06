@@ -1,0 +1,16 @@
+<%- include("templates/header") %>
+    
+    <div style="text-align: center">
+        create user
+        <form action='/submitUser' method='post'>
+            <br>
+            <input name='username' type='text' placeholder='username'>
+            <br>
+            <input name='email' type='text' placeholder='email'>
+            <br>
+            <input name='password' type='password' placeholder='password'>
+            <br><br>
+            <button>Submit</button>
+        </form>
+    </div>
+<%- include("templates/footer") %>

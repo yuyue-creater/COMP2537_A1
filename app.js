@@ -4,7 +4,7 @@ const session = require('express-session')
 const usersModel = require('./models/w1users');
 const bcrypt = require('bcrypt');
 const Joi = require("joi");
-const dotenv = require('dotenv')
+const dotenv = require('dotenv');
 dotenv.config();
 
 var MongoDBStore = require('connect-mongodb-session')(session);
@@ -15,6 +15,7 @@ const node_session_secret = process.env.NODE_SESSION_SECRET;
 const collection_database = process.env.COLLECTION_DATABASE;
 /* END secret section */
 
+app.set('view engine', 'ejs');
 
 var dbStore = new MongoDBStore({
     // uri: 'mongodb://localhost:27017/connect_mongodb_session_test',
@@ -25,9 +26,8 @@ var dbStore = new MongoDBStore({
     }
 });
 
-const expireTime = 1 * 60 * 60 * 1000; //expires after 1 hour (hours * minutes * seconds * millis)
-
 app.use(express.urlencoded({ extended: false }))
+const expireTime = 1 * 60 * 60 * 1000; //expires after 1 hour (hours * minutes * seconds * millis)
 
 app.use(session({
     secret: node_session_secret,
@@ -36,45 +36,45 @@ app.use(session({
     saveUninitialized: false,
 }))
 
-app.get('/', (req, res) => {
-    html = `
-    <form action="/signup" method="get">
-    <input type="submit" value="Sign up"/>
-    </form>
-    <form action="/login" method="get">
-    <input type="submit" value="Log in"/>
-    </form>
-    `
-    if (req.session.GLOBAL_AUTHENTICATED) {
-        html = `
-        <h1>Hello, ${req.session.username}!</h1>
-        <br>
-        <form action="/Members" method="get">
-        <input type="submit" value="Go to Members Area"/>
-        </form>
-        <form action="/logout" method="get">
-        <input type="submit" value="Logout"/>
-        </form>
-        `
+
+function isValidSession(req) {
+    return req.session.GLOBAL_AUTHENTICATED;
+}
+
+function sessionValidation(req, res, next) {
+    if (isValidSession(req)) {
+        next();
     }
-    res.send(html)
-})
+    else {
+        res.redirect('/login');
+    }
+}
+
+function isAdmin(req) {
+    if (req.session.type == "admin") {
+        return true;
+    }
+    return false;
+}
+
+function adminAuthorization(req, res, next) {
+    if (!isAdmin(req)) {
+        res.status(403);
+        res.render("error", { error: "This page is for administrators only. You are not authorized" });
+        console.log(req.session.type)
+        return;
+    }
+    else {
+        next();
+    }
+}
+
+app.get('/', (req, res) => {
+    res.render('home', {user: req.session.username, authenticated: req.session.GLOBAL_AUTHENTICATED});
+});
 
 app.get('/signup', (req, res) => {
-    var html = `
-    create user
-    <form action='/submitUser' method='post'>
-    <br>
-    <input name='username' type='text' placeholder='username'>
-    <br>
-    <input name='email' type='text' placeholder='email'>
-    <br>
-    <input name='password' type='password' placeholder='password'>
-    <br><br>
-    <button>Submit</button>
-    </form>
-    `;
-    res.send(html);
+    res.render('signUp')
 });
 
 app.post('/submitUser', async (req, res) => {
@@ -85,7 +85,7 @@ app.post('/submitUser', async (req, res) => {
     if (username == "" || password == "" || email == "") {
         var message = ``
         if (username == "") {
-            message += `<p>Name is missing</p><br>`  
+            message += `<p>Name is missing</p><br>`
         }
         if (email == "") {
             message += `<p>Email is missing</p><br>`
@@ -103,10 +103,8 @@ app.post('/submitUser', async (req, res) => {
 
     const username_test = Joi.string().alphanum().min(3).max(30).required();
     const username_result = username_test.validate(username);
-
     const password_test = Joi.string().alphanum().min(5).max(20).required()
     const password_result = password_test.validate(password)
-
     if (username_result.error || password_result.error) {
         console.log('Please fix your username/password')
         res.send(`
@@ -118,29 +116,19 @@ app.post('/submitUser', async (req, res) => {
     `)
         return;
     }
-
     var userPassword = await bcrypt.hash(password, 12);
-    await usersModel.insertMany([{ username: username, password: userPassword }]);
+    await usersModel.insertMany([{ username: username, password: userPassword, type: "admin" }]);
     req.session.GLOBAL_AUTHENTICATED = true;
     req.session.username = username;
     req.session.password = userPassword;
     req.session.cookie.maxAge = expireTime;
+    req.session.type = "admin";
     console.log("Inserted user");
     res.redirect('/members');
 });
 
 app.get('/login', (req, res) => {
-    res.send(`
-        <form action="/loggingin" method="post">
-            log in
-            <br>
-            <input type="text" name="username" placeholder="Enter your username" />
-            <br>
-            <input type="password" name="password" placeholder="Enter your password" />
-            <br>
-            <input type="submit" value="Login"/>
-        </form>
-    `)
+    res.render('login.ejs')
 });
 
 app.post('/loggingin', async (req, res) => {
@@ -162,13 +150,13 @@ app.post('/loggingin', async (req, res) => {
         User is not found
         <form action="/login" method="get">
         <input type="submit" value="Try again"/>
-        </form>
-    `)
+        </form>`)
         return;
     }
     if (await bcrypt.compare(password, result.password)) {
         req.session.GLOBAL_AUTHENTICATED = true;
         req.session.username = username;
+        req.session.type = result.type;
         res.redirect('/Members');
         return;
     }
@@ -183,24 +171,92 @@ app.post('/loggingin', async (req, res) => {
     }
 });
 
+app.get('/admin', sessionValidation, adminAuthorization, async (req, res) => {
+    const result = await usersModel.find();
+    res.render("admin", { users: result });
+});
+
+app.get('/toAdmin/:username/:type', sessionValidation, adminAuthorization, async (req, res) => {
+    await usersModel.updateOne({ username: req.params.username }, { $set: { type: "admin" } })
+    const user = await usersModel.findOne({ username: req.params.username });
+    res.render('switchType', { user: user });
+})
+
+app.get('/toUser/:username/:type', sessionValidation, adminAuthorization, async (req, res) => {
+    await usersModel.updateOne({ username: req.params.username }, { $set: { type: "user" } })
+    const user = await usersModel.findOne({ username: req.params.username });
+    res.render('switchType', { user: user });
+})
+
 app.use(express.static('public'))
-app.get('/Members', (req, res) => {
-    const randomImageNumber = Math.floor(Math.random() * 3) + 1;
-    const imageName = `${randomImageNumber}.png`;
-    HTMLResponse = `
-      <h1>Hello ${req.session.username}</h1><br>
-      <img src="${imageName}"/>
-      <form action="/logout" method="get">
-      <input type="submit" value="Sign Out"/>
-      </form>
-      `
+
+app.get('/members', async (req, res) => {
+    // const randomImageNumber = Math.floor(Math.random() * 3) + 1;
+    // const imageName = `${randomImageNumber}.png`;
+    // HTMLResponse = `
+    //   <h1>Hello ${req.session.username}</h1><br>
+    //   <img src="${imageName}"/>
+    //   <form action="/logout" method="get">
+    //   <input type="submit" value="Sign Out"/>
+    //   </form>
+    //   `
+    console.log(req.session.type)
     if (req.session.GLOBAL_AUTHENTICATED) {
-        res.send(HTMLResponse);
+        const result = await usersModel.findOne({ username: req.session.username })
+        res.render('members.ejs', {
+            "x": req.session.username,
+            "todos": result.todos
+        })
     } else {
         res.redirect('/');
         return
     }
 });
+
+app.post('/addNewToDoItem', async (req, res) => {
+
+    // 1 - find the user
+    // 2 - update the array
+    // 3 - update the user's array
+    const updateResult = await usersModel.updateOne({ username: req.session.username }, { $push: { todos: { "name": req.body.theLabelOfThenNewItem } } })
+    console.log(updateResult);
+    // 4 - redirect to members page
+    res.redirect('/members');
+})
+
+app.post('/flipTodoItem', async (req, res) => {
+    // 1 - find the user
+    const result = await usersModel.findOne({ username: req.session.username })
+    // 2 - update the todo item (flip)
+    const newArr = result.todos.map((todoItem) => {
+        if (todoItem.name == req.body.x) {
+            todoItem.done = !todoItem.done
+        }
+        return todoItem
+    })
+    // 3 - update the user's todo array
+    const updateResult = await usersModel.updateOne({ username: req.session.username }, { $set: { todos: newArr } })
+    // 4 - redirect to the members page
+    res.redirect('/members');
+})
+
+app.post('/deleteToDoItem', async (req, res) => {
+    try {
+        // 1 - find the user
+        const result = await usersModel.findOne({ username: req.session.username })
+        // 2 - update the array
+        const newArr = result.todos.filter(todoItem =>
+            todoItem.name != req.body.x
+        )
+        // 3 - update the user's todo array
+        const updateResult = await usersModel.updateOne({ username: req.session.username }, { $set: { todos: newArr } })
+        // 4 - redirect to the members page
+        res.redirect('/members');
+    }
+    catch (error) {
+        console.log(error);
+    }
+})
 
 app.get('/logout', (req, res) => {
     req.session.destroy();
@@ -208,7 +264,7 @@ app.get('/logout', (req, res) => {
 });
 
 app.get('*', (req, res) => {
-    res.status(404).send('<h1> 404 Page not found</h1>');
+    res.status(404).render('404.ejs')
 });
 
 module.exports = app;
