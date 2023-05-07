@@ -1,0 +1,14 @@
+<%- include("templates/header") %>
+    <div class="container">
+        <%= username_message %>
+        <br>
+        <%= email_message %>
+        <br>
+        <%= password_message %>
+        <br>
+        Name, email, and password are all required
+        <form action='/signup' method='get'>
+            <input type='submit' value='Try again' />
+        </form>
+    </div>
+    <%- include("templates/footer") %>

@@ -36,7 +36,6 @@ app.use(session({
     saveUninitialized: false,
 }))
 
-
 function isValidSession(req) {
     return req.session.GLOBAL_AUTHENTICATED;
 }
@@ -81,23 +80,20 @@ app.post('/submitUser', async (req, res) => {
     var username = req.body.username;
     var password = req.body.password;
     var email = req.body.email;
-
+    var username_message = ''
+    var password_message = ''
+    var email_message = ''
     if (username == "" || password == "" || email == "") {
-        var message = ``
         if (username == "") {
-            message += `<p>Name is missing</p><br>`
+            username_message = 'Name is missing'
         }
         if (email == "") {
-            message += `<p>Email is missing</p><br>`
+            email_message += 'Email is missing\n'
         }
         if (password == "") {
-            message += '<p>Password is missing</p><br>'
+            password_message += 'Password is missing\n'
         }
-        message += `Name, email, and password are all required
-    <form action='/signup' method='get'>
-    <input type='submit' value='Try again'/>
-    </form>`
-        res.send(message)
+        res.render('submitMissing', {username_message: username_message, email_message: email_message, password_message, password_message })
         return
     }
 
@@ -107,13 +103,7 @@ app.post('/submitUser', async (req, res) => {
     const password_result = password_test.validate(password)
     if (username_result.error || password_result.error) {
         console.log('Please fix your username/password')
-        res.send(`
-        <form action="/signup" method="get">
-            Please have at least 3 characters in your username and at least 5 characters in your password
-            <br>
-            <input type="submit" value="Try Again"/>
-        </form>
-    `)
+        res.render('submitError')
         return;
     }
     var userPassword = await bcrypt.hash(password, 12);
@@ -139,19 +129,15 @@ app.post('/loggingin', async (req, res) => {
     const validationResult = schema.validate(username);
     if (validationResult.error != null) {
         console.log(validationResult.error);
-        res.redirect("/login");
+        res.redirect('/login');
         return;
     }
 
     const result = await usersModel.findOne({ username: username })
     if (!result) {
         console.log("user not found");
-        res.send(`
-        User is not found
-        <form action="/login" method="get">
-        <input type="submit" value="Try again"/>
-        </form>`)
-        return;
+        res.render('loginError', { message: 'User is not found' })
+        return
     }
     if (await bcrypt.compare(password, result.password)) {
         req.session.GLOBAL_AUTHENTICATED = true;
@@ -162,12 +148,8 @@ app.post('/loggingin', async (req, res) => {
     }
     else {
         console.log('wrong password')
-        res.send(`
-        Invalid username/password combination
-        <form action="/login" method="get">
-        <input type="submit" value="Try again"/>
-        </form>`)
-        return;
+        res.render('loginError', { message: 'Invalid username/password combination' })
+        return
     }
 });
 
@@ -214,43 +196,30 @@ app.get('/members', async (req, res) => {
 });
 
 app.post('/addNewToDoItem', async (req, res) => {
-
-    // 1 - find the user
-    // 2 - update the array
-    // 3 - update the user's array
     const updateResult = await usersModel.updateOne({ username: req.session.username }, { $push: { todos: { "name": req.body.theLabelOfThenNewItem } } })
     console.log(updateResult);
-    // 4 - redirect to members page
     res.redirect('/members');
 })
 
 app.post('/flipTodoItem', async (req, res) => {
-    // 1 - find the user
     const result = await usersModel.findOne({ username: req.session.username })
-    // 2 - update the todo item (flip)
     const newArr = result.todos.map((todoItem) => {
         if (todoItem.name == req.body.x) {
             todoItem.done = !todoItem.done
         }
         return todoItem
     })
-    // 3 - update the user's todo array
     const updateResult = await usersModel.updateOne({ username: req.session.username }, { $set: { todos: newArr } })
-    // 4 - redirect to the members page
     res.redirect('/members');
 })
 
 app.post('/deleteToDoItem', async (req, res) => {
     try {
-        // 1 - find the user
         const result = await usersModel.findOne({ username: req.session.username })
-        // 2 - update the array
         const newArr = result.todos.filter(todoItem =>
             todoItem.name != req.body.x
         )
-        // 3 - update the user's todo array
         const updateResult = await usersModel.updateOne({ username: req.session.username }, { $set: { todos: newArr } })
-        // 4 - redirect to the members page
         res.redirect('/members');
     }
     catch (error) {
