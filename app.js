@@ -232,6 +232,14 @@ app.get('/logout', (req, res) => {
     res.redirect('/');
 });
 
+app.get('/images', (req, res) => {
+    var html = `<form action="http://localhost:3000/upload" method="post" enctype="multipart/form-data">
+    <input type="file" name="kittenFile" />
+    <input type="submit" value="Upload">
+  </form>`
+  res.send(html)
+    
+})
 app.get('*', (req, res) => {
     res.status(404).render('404.ejs')
 });
