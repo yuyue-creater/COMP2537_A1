@@ -93,7 +93,7 @@ app.post('/submitUser', async (req, res) => {
         if (password == "") {
             password_message += 'Password is missing\n'
         }
-        res.render('submitMissing', {username_message: username_message, email_message: email_message, password_message, password_message })
+        res.render('submitMissing', {username_message: username_message, email_message: email_message, password_message: password_message })
         return
     }
 
