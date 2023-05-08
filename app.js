@@ -37,7 +37,7 @@ app.use(session({
 }))
 
 function isValidSession(req) {
-    return req.session.GLOBAL_AUTHENTICATED;
+    return (req.session != null && req.session.GLOBAL_AUTHENTICATED);
 }
 
 function sessionValidation(req, res, next) {
